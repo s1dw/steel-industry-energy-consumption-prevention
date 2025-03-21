@@ -89,10 +89,10 @@ class LocalMLP(nn.Module):
         input_dim = xf_feature_num * (1 + 1 + output_horizon)
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Dropout(0.1),                       
             nn.Linear(hidden_dim, hidden_dim // 2),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Dropout(0.1),                        
             nn.Linear(hidden_dim // 2, num_quantiles)
         )
@@ -106,10 +106,10 @@ class GlobalMLP(nn.Module):
         input_dim = encoder_hidden_size + xf_feature_num
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Dropout(0.1),                       
             nn.Linear(hidden_dim, hidden_dim // 2),
-            nn.GELU(),
+            nn.ReLU(),
             nn.Dropout(0.1),                        
             nn.Linear(hidden_dim // 2, num_quantiles)
         )
@@ -143,11 +143,11 @@ class MQRNN(nn.Module):
     def forward(self, x, xf):
         _, (h, c) = self.encoder(x)
         ht = self.dense(h[-1, :, :])
-        ht = F.gelu(ht)
+        ht = F.relu(ht)
         return self.decoder(ht, xf)
 #%% 訓練
 
-n_layers = 5
+n_layers = 3
 encoder_hidden_size = 10
 quantiles = [0.1, 0.5, 0.9]
 num_quantiles = len(quantiles)
@@ -284,7 +284,7 @@ y_pred = yScaler.inverse_transform(y_pred.squeeze(1))
 y_test_real = yScaler.inverse_transform(y_test.squeeze(1))
 
 start = 96 * 0
-end = 96 * 1
+end = 70
 x_range = range(len(y_test_real[start:end]))
 plt.figure(figsize=(12, 5))
 plt.plot(x_range, y_test_real[start:end], label="Actual")
@@ -295,5 +295,5 @@ plt.show()
 
 a = y_test_real[start:end].flatten()
 b = y_pred[start:end, 1].flatten()
-mape = np.mean(np.abs(a - b) / a)
+mape = np.mean(np.abs(a - b) / (a))
 print(f'MAPE: {mape:.2f}%')
